@@ -2,10 +2,10 @@ const canvas = document.createElement("canvas");
 document.body.appendChild(canvas);
 const ctx = canvas.getContext("2d");
 
+document.title = "Untitled";
+
 canvas.width = window.innerWidth - 10;
 canvas.height = window.innerHeight - 50;
-
-document.title = "Untitled";
 
 const clickImg = new Image();
 clickImg.src = "click_me.png";
@@ -16,24 +16,26 @@ starImg.src = "shootingstar.png";
 let counter = 0;
 let doubleB = false, powerdoubleB = false, critB = false, autoB = false, starB = false;
 let value = 1;
+let handled = false;
+let starPositions = [];
+let powerupsUnlocked = { STAR: false };
 
 class Button {
     constructor(y, image) {
         this.image = image;
         this.y = y;
-        this.width = 150;
-        this.height = 75;
-        this.x = (canvas.width - this.width) / 2;
+        this.size = { width: 150, height: 75 };
+        this.x = (canvas.width - this.size.width) / 2;
         this.clicked = false;
     }
 
     draw() {
-        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+        ctx.drawImage(this.image, this.x, this.y, this.size.width, this.size.height);
     }
 
     isClicked(mouseX, mouseY) {
-        return mouseX >= this.x && mouseX <= this.x + this.width &&
-               mouseY >= this.y && mouseY <= this.y + this.height;
+        return mouseX >= this.x && mouseX <= this.x + this.size.width &&
+               mouseY >= this.y && mouseY <= this.y + this.size.height;
     }
 }
 
@@ -67,6 +69,15 @@ function drawText() {
     ctx.fillText(`Dopamine Points: ${Math.floor(counter)}`, 50, 50);
 }
 
+function drawStars() {
+    if (!starB) return;
+    starPositions.forEach((pos, i) => {
+        ctx.drawImage(starImg, pos.x, pos.y, 50, 50);
+        pos.x += 2; 
+        if (pos.x > canvas.width) pos.x = -50; 
+    });
+}
+
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "white";
@@ -75,6 +86,7 @@ function gameLoop() {
     clickButton.draw();
     drawText();
     powerups.forEach(p => p.draw());
+    drawStars();
     
     if (autoB) counter += 1 / 60;
     requestAnimationFrame(gameLoop);
@@ -91,4 +103,29 @@ document.addEventListener("click", (event) => {
         counter += value;
         console.log("Clicked! Counter: ", counter);
     }
+
+    powerups.forEach(powerup => {
+        if (mouseX >= powerup.x && mouseX <= powerup.x + 50 &&
+            mouseY >= powerup.y && mouseY <= powerup.y + 50) {
+            
+            if (powerup.label === "X2" && counter > 4) {
+                doubleB = true;
+                value = 2;
+            } else if (powerup.label === "^X2^" && counter > 20) {
+                powerdoubleB = true;
+            } else if (powerup.label === "CRIT" && counter > 100) {
+                critB = true;
+            } else if (powerup.label === "AUTO" && counter > 49) {
+                autoB = true;
+            } else if (powerup.label === "STAR" && counter > 9) {
+                starB = true;
+                if (starPositions.length === 0) {
+                    for (let i = 0; i < 5; i++) {
+                        starPositions.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height });
+                    }
+                }
+            }
+            console.log(`${powerup.label} Power-up Activated!`);
+        }
+    });
 });
