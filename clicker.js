@@ -8,26 +8,32 @@ canvas.height = window.innerHeight - 50;
 document.title = "Untitled";
 
 const clickImg = new Image();
-clickImg.src = "click me.png";
+clickImg.src = "click_me.png";
 
 const starImg = new Image();
 starImg.src = "shootingstar.png";
+
+let counter = 0;
+let doubleB = false, powerdoubleB = false, critB = false, autoB = false, starB = false;
+let value = 1;
 
 class Button {
     constructor(y, image) {
         this.image = image;
         this.y = y;
+        this.width = 150;
+        this.height = 75;
+        this.x = (canvas.width - this.width) / 2;
         this.clicked = false;
     }
 
-    draw(multiplier, degree) {
-        if (degree === 1) {
-            this.clicked = false;
-        }
-        const width = this.image.width * multiplier;
-        const height = this.image.height * multiplier;
-        const x = (canvas.width - width) / 2;
-        ctx.drawImage(this.image, x, this.y, width, height);
+    draw() {
+        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+    }
+
+    isClicked(mouseX, mouseY) {
+        return mouseX >= this.x && mouseX <= this.x + this.width &&
+               mouseY >= this.y && mouseY <= this.y + this.height;
     }
 }
 
@@ -35,21 +41,18 @@ class Powerup {
     constructor(order, label) {
         this.order = order;
         this.label = label;
+        this.x = this.order < 3 ? 1300 : 1400;
+        this.y = 400 + 100 * (this.order % 2 === 0 ? 1 : 0);
     }
 
     draw() {
         ctx.fillStyle = "black";
         ctx.font = "32px Arial";
-        const x = this.order < 3 ? 1300 : 1400;
-        const y = 400 + 100 * (this.order % 2 === 0 ? 1 : 0);
-        ctx.fillText(this.label, x, y);
+        ctx.fillText(this.label, this.x, this.y);
     }
 }
 
-let counter = 0;
-const click = new Button(200, clickImg);
-const dopamine = new Button(270, document.createElement("canvas"));
-
+const clickButton = new Button(200, clickImg);
 const powerups = [
     new Powerup(1, "X2"),
     new Powerup(2, "^X2^"),
@@ -58,34 +61,34 @@ const powerups = [
     new Powerup(5, "STAR")
 ];
 
-let doubleB = false, powerdoubleB = false, critB = false, autoB = false, starB = false;
+function drawText() {
+    ctx.fillStyle = "black";
+    ctx.font = "32px Arial";
+    ctx.fillText(`Dopamine Points: ${Math.floor(counter)}`, 50, 50);
+}
 
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    click.draw(0.6, 1);
-    dopamine.draw(0.6, 2);
-    
+    clickButton.draw();
+    drawText();
     powerups.forEach(p => p.draw());
     
+    if (autoB) counter += 1 / 60;
     requestAnimationFrame(gameLoop);
 }
 
 gameLoop();
 
 document.addEventListener("click", (event) => {
-    const x = (canvas.width - clickImg.width * 0.6) / 2;
-    const y = 200;
-    const width = clickImg.width * 0.6;
-    const height = clickImg.height * 0.6;
-    
-    if (
-        event.clientX >= x && event.clientX <= x + width &&
-        event.clientY >= y && event.clientY <= y + height
-    ) {
-        counter += 1;
-        console.log("clicked");
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    if (clickButton.isClicked(mouseX, mouseY)) {
+        counter += value;
+        console.log("Clicked! Counter: ", counter);
     }
 });
